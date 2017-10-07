@@ -170,15 +170,15 @@ def scan_object(bucket_name, key):
         puts(obj.key + ' ' + colored.red(str(e)))
 
 
-def reset_object(bucket_name, key, dry_run):
+def reset_object(bucket_name, key, dry_run, acl):
     obj = s3.Object(bucket_name, key)
 
     try:
         if dry_run:
-            puts(obj.key + ' ' + colored.yellow('ACL to be reset'))
+            puts(obj.key + ' ' + colored.yellow('ACL to be updated to' + acl))
         else:
-            obj.Acl().put(ACL='private')
-            puts(obj.key + ' ' + colored.blue('ACL reset'))
+            obj.Acl().put(ACL=acl)
+            puts(obj.key + ' ' + colored.blue('ACL updated to ' + acl))
 
     except (botocore.exceptions.ClientError, botocore.exceptions.NoCredentialsError) as e:
         puts(obj.key + ' ' + colored.red(str(e)))
@@ -406,9 +406,11 @@ def scan_object_acl(bucket, only=None, _except=None):
 @click.argument('bucket')
 @click.option('--only', help='Only certain objects')
 @click.option('--except', '_except', help='Except certain objects')
+@click.option('--public', is_flag=True, help='Use public-read ACL')
 @click.option('--dry-run', is_flag=True, help='Dry run')
-def reset_object_acl(bucket, only=None, _except=None, dry_run=False):
-    parallelize(bucket, only, _except, reset_object, (dry_run,))
+def reset_object_acl(bucket, only=None, _except=None, public=False, dry_run=False):
+    acl = 'public-read' if public else 'private'
+    parallelize(bucket, only, _except, reset_object, (dry_run, acl,))
 
 
 @cli.command(name='list-policy')
